@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="board">
+
+	<select id="count" resultType="int">
+		SELECT count(*) FROM board
+	</select>
+
+	<select id="list" parameterType="dto.PageDTO"
+		resultType="dto.BoardDTO">
+    <![CDATA[
+		select b.* from
+		 (select rownum as rm, a.* from(
+		    select * from board
+		    order by ref desc, re_step asc) a)b
+		where b.rm >= #{startRow} and b.rm <= #{endRow}
+		]]>
+	</select>
+
+	<insert id="save" parameterType="dto.BoardDTO">
+		INSERT INTO board(num, writer, email, subject, reg_date,
+		                  readcount, ref, re_step, re_level, content, ip, upload)
+		VALUES(board_num_seq.nextval, #{writer, jdbcType=VARCHAR}, #{email, jdbcType=VARCHAR}, #{subject, jdbcType=VARCHAR}, sysdate, 0, 
+		  <choose>
+		    <when test="ref==0">
+		      board_num_seq.nextval
+		    </when>
+		    <otherwise>
+		      #{ref}
+		    </otherwise>
+		  </choose>     
+		  , #{re_step}, #{re_level}, #{content, jdbcType=VARCHAR}, #{ip}, #{upload, jdbcType=VARCHAR}     
+		  )
+		  <!-- jdbcType=VARCHAR null값 사용가능하기 위해선 넣어주어야한다. -->
+	</insert>
+	
+	<update id="readCount" parameterType="int">
+	  UPDATE board SET readcount = readcount + 1
+	  WHERE num=#{num}
+	</update>
+	
+	<select id="view" parameterType="int" resultType="dto.BoardDTO">
+	  SELECT * FROM board
+	  WHERE num=#{num}
+	</select>
+	
+	<select id="uploadFile" parameterType="int" resultType="String">
+	  SELECT upload FROM board
+	  WHERE num=#{num}
+	</select>
+</mapper>
