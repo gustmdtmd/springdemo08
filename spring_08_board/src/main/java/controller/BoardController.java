@@ -77,7 +77,7 @@ public class BoardController {
 
 		// 현재 클라이언트에 접속한 ip를 가져옴
 		dto.setIp(request.getRemoteAddr());
-
+		
 		service.insertProcess(dto);
 
 		if (dto.getRef() != 0) { // 답변글이면
@@ -87,6 +87,38 @@ public class BoardController {
 		}
 	}// end writeProMethod()
 
+	//GET은 서버의 리소스에서 데이터를 요청할 때
+	@RequestMapping(value="/update.sb", method=RequestMethod.GET)
+	public ModelAndView updateMethod(int num, int currentPage, ModelAndView mav) {
+		mav.addObject("dto", service.updateSelectProcess(num));
+		mav.addObject("currentPage", currentPage);
+		mav.setViewName("board/update");
+		return mav;
+	}//end updateMethode()
+	
+	//POST는 서버의 리소스를 새로 생성하거나 업데이트할 때 사용
+	@RequestMapping(value="/update.sb", method=RequestMethod.POST)
+	public String updateProMethod(BoardDTO dto, int currentPage, HttpServletRequest request) {
+		//MultipartFile 인터페이스를 통해서 파일업로드 하는 방법
+		MultipartFile file = dto.getFilename();
+		if(!file.isEmpty()) {
+			UUID random = saveCopyFile(file, request);
+			dto.setUpload(random + "_" + file.getOriginalFilename());
+		}
+		
+		service.updateProcess(dto, urlPath(request));
+		return "redirect:/list.sb?currentPage=" + currentPage;
+	}//end updateProMethod()
+	
+	@RequestMapping(value="/delete.sb")
+	public String deleteMethod(int num, int currentPage, HttpServletRequest request) {
+		service.deleteProcess(num, urlPath(request));
+		
+		int totalRecord = service.countProcess();
+		this.pdto = new PageDTO (this.currentPage, totalRecord);
+		return "redirect:/list.sb?currentPage=" + this.pdto.getCurrentPage();
+	}//end deleteMethod()
+	
 	private UUID saveCopyFile(MultipartFile file, HttpServletRequest request) {
 		String fileName = file.getOriginalFilename();
 
@@ -128,7 +160,7 @@ public class BoardController {
 	}//end contentProcess()
 	
 	@RequestMapping("/contentdownload.sb")
-	public ModelAndView dowmMethod(int num, ModelAndView mav) {
+	public ModelAndView downMethod(int num, ModelAndView mav) {
 		mav.addObject("num", num);
 		mav.setViewName("download");
 		return mav;
